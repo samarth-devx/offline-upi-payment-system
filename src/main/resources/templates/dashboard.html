@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>UPI Offline Mesh — Demo</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --surface-0:#16181d; --surface-1:#1d2128; --surface-2:#262b33;
+  --border:rgba(255,255,255,0.07);--border-strong:rgba(255,255,255,0.14);
+  --text-primary:#e6edf3;--text-secondary:#8b949e;--text-muted:#6e7681;
+  --text-accent:#79c0ff;--text-success:#56d364;--text-danger:#f85149;--text-warning:#d29922;
+  --bg-accent:rgba(56,139,253,0.10);--bg-success:rgba(46,160,67,0.15);
+  --bg-danger:rgba(248,81,73,0.15);--bg-warning:rgba(210,153,34,0.15);
+  --border-accent:#388bfd;--border-success:#2ea043;--border-danger:#f85149;
+  --fill-accent:#1f6feb;--fill-accent-hover:#388bfd;--on-accent:#fff;
+  --fill-danger:#da3633;--on-danger:#fff;
+  --radius:6px;--font-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-mono:'Consolas','Monaco',monospace;
+}
+body{font-family:var(--font-sans);background:var(--surface-0);color:var(--text-primary)}
+.shell{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+.sidebar{background:var(--surface-1);border-right:0.5px solid var(--border);padding:20px 16px;display:flex;flex-direction:column;gap:24px}
+.logo{display:flex;align-items:center;gap:10px;padding-bottom:16px;border-bottom:0.5px solid var(--border)}
+.logo-icon{width:36px;height:36px;border-radius:10px;background:var(--bg-accent);display:flex;align-items:center;justify-content:center}
+.logo-icon i{color:var(--text-accent);font-size:18px}
+.logo-text{font-size:14px;font-weight:500;color:var(--text-primary);line-height:1.2}
+.logo-sub{font-size:11px;color:var(--text-muted)}
+.nav-label{font-size:11px;color:var(--text-muted);font-weight:500;letter-spacing:.04em;text-transform:uppercase;padding:0 4px;margin-bottom:4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--radius);cursor:pointer;font-size:13px;color:var(--text-secondary);transition:background .15s}
+.nav-item:hover{background:var(--surface-2);color:var(--text-primary)}
+.nav-item.active{background:var(--bg-accent);color:var(--text-accent);font-weight:500}
+.nav-item i{font-size:16px;width:18px}
+.device-list{display:flex;flex-direction:column;gap:6px}
+.device-chip{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--radius);border:0.5px solid var(--border);background:var(--surface-2);font-size:12px}
+.device-chip.bridge{border-color:var(--border-success);background:var(--bg-success)}
+.device-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dot-online{background:#2ea043}
+.dot-offline{background:var(--text-muted)}
+.device-name{font-weight:500;color:var(--text-primary);flex:1;font-size:12px}
+.pkt-count{font-size:11px;color:var(--text-muted)}
+.main{display:flex;flex-direction:column;background:var(--surface-0)}
+.topbar{padding:16px 24px;border-bottom:0.5px solid var(--border);background:var(--surface-1);display:flex;align-items:center;justify-content:space-between}
+.topbar-title{font-size:15px;font-weight:500}
+.topbar-sub{font-size:12px;color:var(--text-muted);margin-top:2px}
+.topbar-actions{display:flex;gap:8px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;border:0.5px solid var(--border-strong);background:var(--surface-2);color:var(--text-primary);transition:background .15s;font-family:var(--font-sans)}
+.btn:hover{background:var(--surface-1)}
+.btn-primary{background:var(--fill-accent);border-color:transparent;color:var(--on-accent)}
+.btn-primary:hover{background:var(--fill-accent-hover)}
+.btn-danger{
+  background:#f3f4f6;
+  border-color:#d1d5db;
+  color:#111827;
+}
+.btn-danger:hover{
+  background:#ffffff;
+  border-color:#e5e7eb;
+  color:#111827;
+}
+.btn i{font-size:15px}
+.content{padding:20px 24px;display:flex;flex-direction:column;gap:16px;overflow-y:auto}
+.metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.metric-card{background:var(--surface-1);border:0.5px solid var(--border);border-radius:12px;padding:14px 16px}
+.metric-label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.metric-val{font-size:24px;font-weight:500;color:var(--text-primary);font-variant-numeric:tabular-nums}
+.metric-sub{font-size:11px;color:var(--text-muted);margin-top:2px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card{background:var(--surface-1);border:0.5px solid var(--border);border-radius:12px;overflow:hidden}
+.card-header{padding:14px 16px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px}
+.card-title i{font-size:16px;color:var(--text-accent)}
+.card-body{padding:14px 16px}
+.send-form{display:flex;flex-direction:column;gap:10px}
+.form-row{display:flex;gap:8px;align-items:center}
+.form-row label{font-size:12px;color:var(--text-muted);width:54px;flex-shrink:0}
+.form-row select,.form-row input{flex:1;padding:6px 10px;border-radius:var(--radius);border:0.5px solid var(--border-strong);background:var(--surface-0);color:var(--text-primary);font-size:13px;font-family:var(--font-sans)}
+.step-row{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:0.5px solid var(--border)}
+.step-row:last-child{border-bottom:none}
+.step-num{width:22px;height:22px;border-radius:50%;background:var(--bg-accent);color:var(--text-accent);font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-label{font-size:13px;color:var(--text-secondary);flex:1}
+.step-btn{padding:5px 12px;border-radius:var(--radius);border:0.5px solid var(--border-accent);background:var(--bg-accent);color:var(--text-accent);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;font-family:var(--font-sans)}
+.step-btn:hover{background:var(--fill-accent);color:var(--on-accent)}
+.tx-table{width:100%;font-size:12px;border-collapse:collapse}
+.tx-table th{color:var(--text-muted);font-weight:500;padding:8px 12px;text-align:left;border-bottom:0.5px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.tx-table td{padding:9px 12px;border-bottom:0.5px solid var(--border);color:var(--text-secondary)}
+.tx-table tr:last-child td{border-bottom:none}
+.tx-table tbody tr:hover td{background:var(--surface-2)}
+.status-pill{padding:3px 8px;border-radius:4px;font-size:11px;font-weight:500;display:inline-block}
+.pill-settled{background:var(--bg-success);color:var(--text-success)}
+.pill-rejected{background:var(--bg-danger);color:var(--text-danger)}
+.mono{font-family:var(--font-mono);font-size:11px}
+.log-box{background:var(--surface-0);border-radius:8px;padding:10px 12px;max-height:160px;overflow-y:auto;font-family:var(--font-mono);font-size:11px;color:var(--text-success);line-height:1.6;border:0.5px solid var(--border)}
+.log-entry{display:flex;gap:8px}
+.log-time{color:var(--text-muted);flex-shrink:0}
+.cache-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:var(--surface-0);border:0.5px solid var(--border);font-size:11px;color:var(--text-muted)}
+.acct-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--border)}
+.acct-row:last-child{border-bottom:none}
+.acct-info{display:flex;align-items:center;gap:10px}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--bg-accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:var(--text-accent)}
+.acct-name{font-size:13px;font-weight:500;color:var(--text-primary)}
+.acct-vpa{font-size:11px;color:var(--text-muted)}
+.acct-bal{font-size:14px;font-weight:500;color:var(--text-success);font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="sidebar">
+    <div class="logo">
+      <div class="logo-icon"><i class="ti ti-antenna-bars-5"></i></div>
+      <div>
+        <div class="logo-text">UPI Mesh</div>
+        <div class="logo-sub">Offline payments</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="nav-label">Navigation</div>
+      <div class="nav-item active"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+    </div>
+
+    <div style="flex:1">
+      <div class="nav-label" style="margin-bottom:8px">Mesh devices</div>
+      <div class="device-list" id="sidebar-devices">
+        <div style="font-size:12px;color:var(--text-muted);padding:4px">Loading...</div>
+      </div>
+    </div>
+
+    <div style="padding-top:12px;border-top:0.5px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted)">
+        <i class="ti ti-database" style="font-size:14px"></i>
+        <span>H2 in-memory · Port 8080</span>
+      </div>
+      <div id="cache-display" class="cache-pill" style="margin-top:6px">
+        <i class="ti ti-shield-check" style="font-size:12px"></i> Cache: —
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Dashboard</div>
+        <div class="topbar-sub">Live mesh state — auto-refreshes every 3s</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-danger" onclick="resetMesh()">
+          <i class="ti ti-trash"></i>Reset mesh
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="metrics-row">
+        <div class="metric-card">
+          <div class="metric-label">Total packets</div>
+          <div class="metric-val" id="m-packets">—</div>
+          <div class="metric-sub">across all devices</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Idempotency cache</div>
+          <div class="metric-val" id="m-cache">—</div>
+          <div class="metric-sub">hashes remembered</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Transactions</div>
+          <div class="metric-val" id="m-txns">—</div>
+          <div class="metric-sub">settled + rejected</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Bridge nodes</div>
+          <div class="metric-val" id="m-bridges">—</div>
+          <div class="metric-sub">devices with internet</div>
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="ti ti-send"></i>Send payment</div>
+          </div>
+          <div class="card-body">
+            <div class="send-form">
+              <div class="form-row">
+                <label>From</label>
+                <select id="senderVpa">
+                  <option>alice@demo</option>
+                  <option>bob@demo</option>
+                  <option>carol@demo</option>
+                  <option>dave@demo</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <label>To</label>
+                <select id="receiverVpa">
+                  <option>bob@demo</option>
+                  <option>carol@demo</option>
+                  <option>alice@demo</option>
+                  <option>dave@demo</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <label>Amount</label>
+                <input type="number" id="amount" value="500" style="max-width:100px">
+                <span style="font-size:13px;color:var(--text-muted)">₹</span>
+              </div>
+              <div class="form-row">
+                <label>PIN</label>
+                <input type="password" id="pin" value="1234" maxlength="4" style="max-width:80px">
+              </div>
+              <div style="padding-top:4px">
+                <button class="btn btn-primary" onclick="sendPacket()" style="width:100%;justify-content:center">
+                  <i class="ti ti-lock"></i>Encrypt and inject into mesh
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="ti ti-radar"></i>Mesh controls</div>
+          </div>
+          <div class="card-body" style="padding:0">
+            <div class="step-row">
+              <div class="step-num">1</div>
+              <div class="step-label">Encrypt and inject at alice's phone</div>
+            </div>
+            <div class="step-row">
+              <div class="step-num">2</div>
+              <div class="step-label">Gossip — packets hop device to device</div>
+              <button class="step-btn" onclick="gossip()">
+                <i class="ti ti-refresh" style="font-size:12px;vertical-align:-1px"></i> Run round
+              </button>
+            </div>
+            <div class="step-row">
+              <div class="step-num">3</div>
+              <div class="step-label">Bridge gets 4G — uploads everything</div>
+              <button class="step-btn" onclick="flushBridges()">
+                <i class="ti ti-upload" style="font-size:12px;vertical-align:-1px"></i> Flush bridges
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="ti ti-users"></i>Account balances</div>
+          </div>
+          <div class="card-body" style="padding:0 16px" id="accounts-list">
+            <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">Loading...</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="ti ti-terminal-2"></i>Activity log</div>
+          </div>
+          <div class="card-body">
+            <div class="log-box" id="log-box">
+              <div class="log-entry">
+                <span class="log-time">--:--:--</span>
+                <span>Dashboard ready. Waiting for activity...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="ti ti-list-details"></i>Transaction ledger</div>
+          <span id="tx-count" style="font-size:11px;color:var(--text-muted)">Last 20</span>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="tx-table">
+            <thead>
+              <tr>
+                <th>ID</th><th>From</th><th>To</th><th>Amount</th>
+                <th>Status</th><th>Bridge node</th><th>Hops</th><th>Settled at</th>
+              </tr>
+            </thead>
+            <tbody id="tx-body">
+              <tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px">No transactions yet</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function addLog(msg) {
+  const box = document.getElementById('log-box');
+  const t = new Date().toLocaleTimeString();
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = '<span class="log-time">' + t + '</span><span>' + msg + '</span>';
+  box.insertBefore(entry, box.firstChild);
+}
+
+async function refresh() {
+  try {
+    const m = await fetch('/api/mesh/state').then(r => r.json());
+    let totalPkts = 0, bridges = 0;
+    const sidebarEl = document.getElementById('sidebar-devices');
+    sidebarEl.innerHTML = '';
+    m.devices.forEach(d => {
+      totalPkts += d.packetCount;
+      if (d.hasInternet) bridges++;
+      const el = document.createElement('div');
+      el.className = 'device-chip' + (d.hasInternet ? ' bridge' : '');
+      el.innerHTML = '<div class="device-dot ' + (d.hasInternet ? 'dot-online' : 'dot-offline') + '"></div>'
+        + '<span class="device-name">' + d.deviceId + '</span>'
+        + '<span class="pkt-count">' + d.packetCount + '</span>';
+      sidebarEl.appendChild(el);
+    });
+    document.getElementById('m-packets').textContent = totalPkts;
+    document.getElementById('m-cache').textContent = m.idempotencyCacheSize;
+    document.getElementById('m-bridges').textContent = bridges;
+    document.getElementById('cache-display').innerHTML =
+      '<i class="ti ti-shield-check" style="font-size:12px"></i> Cache: '
+      + m.idempotencyCacheSize + ' hash' + (m.idempotencyCacheSize !== 1 ? 'es' : '');
+  } catch(e) {}
+
+  try {
+    const accs = await fetch('/api/accounts').then(r => r.json());
+    const el = document.getElementById('accounts-list');
+    if (!accs.length) { el.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted)">No accounts</div>'; return; }
+    el.innerHTML = accs.map(a => {
+      const initials = a.holderName.split(' ').map(w => w[0]).join('').toUpperCase();
+      return '<div class="acct-row">'
+        + '<div class="acct-info"><div class="avatar">' + initials + '</div>'
+        + '<div><div class="acct-name">' + a.holderName + '</div>'
+        + '<div class="acct-vpa">' + a.vpa + '</div></div></div>'
+        + '<div class="acct-bal">&#8377;' + parseFloat(a.balance).toFixed(2) + '</div>'
+        + '</div>';
+    }).join('');
+  } catch(e) {}
+
+  try {
+    const txs = await fetch('/api/transactions').then(r => r.json());
+    document.getElementById('tx-count').textContent = txs.length + ' records';
+    document.getElementById('m-txns').textContent = txs.length;
+    if (!txs.length) {
+      document.getElementById('tx-body').innerHTML =
+        '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px">No transactions yet</td></tr>';
+      return;
+    }
+    document.getElementById('tx-body').innerHTML = txs.map(t => {
+      const pillClass = t.status === 'SETTLED' ? 'pill-settled' : 'pill-rejected';
+      const time = new Date(t.settledAt).toLocaleTimeString();
+      return '<tr>'
+        + '<td class="mono">#' + t.id + '</td>'
+        + '<td>' + t.senderVpa + '</td>'
+        + '<td>' + t.receiverVpa + '</td>'
+        + '<td style="font-weight:500;color:var(--text-primary)">&#8377;' + parseFloat(t.amount).toFixed(2) + '</td>'
+        + '<td><span class="status-pill ' + pillClass + '">' + t.status + '</span></td>'
+        + '<td class="mono">' + t.bridgeNodeId + '</td>'
+        + '<td>' + t.hopCount + '</td>'
+        + '<td style="color:var(--text-muted)">' + time + '</td>'
+        + '</tr>';
+    }).join('');
+  } catch(e) {}
+}
+
+async function sendPacket() {
+  const body = {
+    senderVpa: document.getElementById('senderVpa').value,
+    receiverVpa: document.getElementById('receiverVpa').value,
+    amount: parseFloat(document.getElementById('amount').value),
+    pin: document.getElementById('pin').value,
+    ttl: 5,
+    startDevice: 'phone-alice'
+  };
+  try {
+    const r = await fetch('/api/demo/send', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
+    }).then(r => r.json());
+    addLog('Packet ' + r.packetId.substring(0, 8) + '... injected at ' + r.injectedAt + ' (TTL ' + r.ttl + ')');
+    addLog('Ciphertext: ' + r.ciphertextPreview);
+    refresh();
+  } catch(e) { addLog('Error: could not reach server. Is it running on :8080?'); }
+}
+
+async function gossip() {
+  try {
+    const r = await fetch('/api/mesh/gossip', {method: 'POST'}).then(r => r.json());
+    addLog('Gossip round: ' + r.transfers + ' transfer(s) — ' + JSON.stringify(r.deviceCounts));
+    refresh();
+  } catch(e) { addLog('Error: gossip failed'); }
+}
+
+async function flushBridges() {
+  try {
+    const r = await fetch('/api/mesh/flush', {method: 'POST'}).then(r => r.json());
+    addLog(r.uploadsAttempted + ' bridge upload(s) attempted');
+    r.results.forEach(res => {
+      addLog('  ' + res.bridgeNode + ' — ' + res.packetId + ' → ' + res.outcome + (res.reason ? ' (' + res.reason + ')' : ''));
+    });
+    refresh();
+  } catch(e) { addLog('Error: flush failed'); }
+}
+
+async function resetMesh() {
+  try {
+    await fetch('/api/mesh/reset', {method: 'POST'});
+    addLog('Mesh + idempotency cache cleared');
+    refresh();
+  } catch(e) { addLog('Error: reset failed'); }
+}
+
+refresh();
+setInterval(refresh, 3000);
+</script>
+</body>
+</html>
